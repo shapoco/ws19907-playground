@@ -4,37 +4,14 @@
 #include <math.h>
 #include <vector>
 
-namespace shapoco::inochi {
+#include "inochi/real.hpp"
+#include "inochi/vec.hpp"
 
-using real = float;
+namespace shapoco::inochi {
 
 static constexpr int NUM_INITIAL_BALLS = 15;
 static const real VIEW_RADIUS = 8;
 static const real CIRCLE_RADIUS = 4;
-
-struct VecR;
-
-struct VecI {
-  int x, y;
-};
-
-struct VecR {
-  real x = 0;
-  real y = 0;
-  VecR() {}
-  VecR(real x, real y) : x(x), y(y) {}
-  VecR(const VecI &v) : x(v.x), y(v.y) {}
-  VecR operator+(const VecR &v) const { return VecR(x + v.x, y + v.y); }
-  VecR operator-(const VecR &v) const { return VecR(x - v.x, y - v.y); }
-  VecR operator*(real s) const { return VecR(x * s, y * s); }
-  VecR operator/(real s) const { return VecR(x / s, y / s); }
-  VecR& operator+=(const VecR &v) { x += v.x; y += v.y; return *this; }
-  VecR& operator-=(const VecR &v) { x -= v.x; y -= v.y; return *this; }
-  VecR& operator*=(real s) { x *= s; y *= s; return *this; }
-  real absPow2() const { return  x * x + y * y; }
-  real abs() const { return sqrt(absPow2()); }
-  VecI roundToInt() const { return VecI{(int)round(x), (int)round(y)}; }
-};
 
 struct TouchState {
   VecI pos;
@@ -68,7 +45,7 @@ static inline real sign(real x) {
   return x < 0 ? -1 : 1;
 }
 
-static real randFloat() {
+static real randR() {
   return (real)rand() / RAND_MAX;
 }
 
@@ -123,8 +100,8 @@ public:
   real r;
 
   InochiNoKakera(VecR pos) : pos(pos) {
-    vec.x = 1.0 * (randFloat() - 0.5);
-    vec.y = 1.0 * (randFloat() - 0.5);
+    vec.x = 1.0 * (randR() - 0.5);
+    vec.y = 1.0 * (randR() - 0.5);
     r = 1.0;
   }
 
@@ -265,20 +242,20 @@ public:
   
   void bounce(real eyeRatio = 0.5) {
     if (!alive) return;
-    bodyPosVel.x = 0.5 * (randFloat() - 0.5);
-    bodyPosVel.y = 0.5 * (randFloat() - 0.5);
-    bodySizeVel = 0.5 * randFloat();
-    bodySizeGoal = 1.0 + 0.5 * randFloat();
-    orbitGoal = CIRCLE_RADIUS + 1.2 * (randFloat() - 0.5);
-    eyeOpened = randFloat() < eyeRatio;
-    eyePosGoal.x = 0.8 * (randFloat() - 0.5);
-    eyePosGoal.y = 0.8 * (randFloat() - 0.5);
+    bodyPosVel.x = 0.5 * (randR() - 0.5);
+    bodyPosVel.y = 0.5 * (randR() - 0.5);
+    bodySizeVel = 0.5 * randR();
+    bodySizeGoal = 1.0 + 0.5 * randR();
+    orbitGoal = CIRCLE_RADIUS + 1.2 * (randR() - 0.5);
+    eyeOpened = randR() < eyeRatio;
+    eyePosGoal.x = 0.8 * (randR() - 0.5);
+    eyePosGoal.y = 0.8 * (randR() - 0.5);
   }
   
   void startSaccade() {
     if (!alive) return;
-    irisPosGoal.x = 0.8 * (randFloat() - 0.5);
-    irisPosGoal.y = 0.8 * (randFloat() - 0.5);
+    irisPosGoal.x = 0.8 * (randR() - 0.5);
+    irisPosGoal.y = 0.8 * (randR() - 0.5);
   }
   
   void paintBody(Context &ctx) {
@@ -353,8 +330,8 @@ public:
     }
 
     if (ctx.balls.size() < NUM_INITIAL_BALLS) {
-      if (randFloat() < 0.01) {
-        real a = 2 * M_PI * randFloat();
+      if (randR() < 0.01) {
+        real a = 2 * M_PI * randR();
         ctx.balls.push_back(new Ball(ctx, VecR(2 * VIEW_RADIUS * cos(a), 2 * VIEW_RADIUS * sin(a))));
       }
     }
@@ -365,12 +342,12 @@ public:
       for(auto ball : ctx.balls) {
         if (ball->eyeOpened) numOpenEye++;
       }
-      if (randFloat() < 0.005 * numInochis) {
-        int i = floor(randFloat() * (int)ctx.balls.size());
+      if (randR() < 0.005 * numInochis) {
+        int i = floor(randR() * (int)ctx.balls.size());
         ctx.balls[i]->bounce(numOpenEye < 0.3 * numInochis ? 0.8 : 0.2);
       }
-      if (randFloat() < 0.01 * numInochis) {
-        int i = floor(randFloat() * numInochis);
+      if (randR() < 0.01 * numInochis) {
+        int i = floor(randR() * numInochis);
         ctx.balls[i]->startSaccade();
       }
     }
