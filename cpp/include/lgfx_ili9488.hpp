@@ -1,21 +1,16 @@
 #pragma once
 
 #include <stdint.h>
-
-#define LGFX_USE_V1
+#include <hardware/pwm.h>
 
 #define TOUCH_ENABLED (0)
-
-// https://x.com/lovyan03/status/1504298966577725441
-// #define LV_COLOR_16_SWAP (1)
-
-#include <hardware/pwm.h>
+#define LGFX_USE_V1
 
 #include <LovyanGFX.hpp>
 
 // https://www.waveshare.com/pico-restouch-lcd-3.5.htm
 
-namespace shapoco::shapopad {
+namespace shapoco {
 
 class LGFX_ILI9488 : public lgfx::LGFX_Device {
   lgfx::Panel_ILI9488 _panel_instance;

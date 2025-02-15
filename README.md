@@ -1,1 +1,2 @@
-# shapo-pad
+# Playground for WAVESHARE 19907
+

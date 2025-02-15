@@ -4,7 +4,7 @@
 
 #include "lgfx_ili9488.hpp"
 
-namespace shapoco::shapopad {
+namespace shapoco {
 
 static constexpr int BPP = 2;
 static constexpr int PIXELS_PER_BYTE = (8 + BPP - 1) / BPP;

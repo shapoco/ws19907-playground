@@ -8,7 +8,7 @@
 #include "lcd_service.hpp"
 #include "inochi/inochi.hpp"
 
-namespace shapoco::shapopad {
+namespace shapoco {
 
 using namespace lgfx;
 using namespace shapoco::inochi;
@@ -105,6 +105,6 @@ int main(void) {
 }  // namespace shapoco::shapopad
 
 int main(void) {
-  return shapoco::shapopad::main();
+  return shapoco::main();
 }
 
