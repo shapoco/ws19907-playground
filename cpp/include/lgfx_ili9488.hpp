@@ -4,12 +4,14 @@
 
 #define LGFX_USE_V1
 
+#define TOUCH_ENABLED (0)
+
 // https://x.com/lovyan03/status/1504298966577725441
 // #define LV_COLOR_16_SWAP (1)
 
-#include <LovyanGFX.hpp>
-
 #include <hardware/pwm.h>
+
+#include <LovyanGFX.hpp>
 
 // https://www.waveshare.com/pico-restouch-lcd-3.5.htm
 
@@ -19,6 +21,10 @@ class LGFX_ILI9488 : public lgfx::LGFX_Device {
   lgfx::Panel_ILI9488 _panel_instance;
   lgfx::Bus_SPI _bus_instance;
   lgfx::Light_PWM _light_instance;
+
+#if TOUCH_ENABLED
+  lgfx::Touch_XPT2046 _touch_instance;
+#endif
 
  public:
   LGFX_ILI9488(int width, int height, int rotation = 0) {
@@ -41,6 +47,7 @@ class LGFX_ILI9488 : public lgfx::LGFX_Device {
       cfg.pin_cs = 9;
       cfg.pin_rst = 15;
       cfg.pin_busy = -1;
+      cfg.bus_shared = true;
       cfg.panel_width = (rotation & 1) ? height : width;
       cfg.panel_height = (rotation & 1) ? width : height;
       cfg.memory_width = cfg.panel_width;
@@ -66,6 +73,27 @@ class LGFX_ILI9488 : public lgfx::LGFX_Device {
       _light_instance.config(cfg);
       _panel_instance.setLight(&_light_instance);
     }
+
+#if TOUCH_ENABLED
+    {
+      auto cfg = _touch_instance.config();
+      cfg.x_min = 0;
+      cfg.x_max = 319;
+      cfg.y_min = 0;
+      cfg.y_max = 479;
+      cfg.pin_int = -1;
+      cfg.bus_shared = true;
+      cfg.offset_rotation = 0;
+      cfg.spi_host = 1;
+      cfg.freq = 1000 * 1000;
+      cfg.pin_sclk = 10;
+      cfg.pin_miso = 12;
+      cfg.pin_mosi = 11;
+      cfg.pin_cs = 16;
+      _touch_instance.config(cfg);
+      _panel_instance.setTouch(&_touch_instance);
+    }
+#endif
 
     setPanel(&_panel_instance);
   }
