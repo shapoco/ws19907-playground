@@ -290,17 +290,18 @@ public:
     //  }
     //}
       
-    if (ctx.inochis.size() > 0) {
+    int numInochis = ctx.inochis.size();
+    if (numInochis > 0) {
       int numOpenEye = 0;
       for(auto inochi : ctx.inochis) {
         if (inochi->eyeOpen) numOpenEye++;
       }
-      if (randFloat() < 0.005 * ctx.inochis.size()) {
-        int i = floor(randFloat() * ctx.inochis.size());
-        ctx.inochis[i]->haneruBody(numOpenEye < 0.3 * ctx.inochis.size() ? 0.8 : 0.2);
+      if (randFloat() < 0.005 * numInochis) {
+        int i = floor(randFloat() * (int)ctx.inochis.size());
+        ctx.inochis[i]->haneruBody(numOpenEye < 0.3 * numInochis ? 0.8 : 0.2);
       }
-      if (randFloat() < 0.01 * ctx.inochis.size()) {
-        int i = floor(randFloat() * ctx.inochis.size());
+      if (randFloat() < 0.01 * numInochis) {
+        int i = floor(randFloat() * numInochis);
         ctx.inochis[i]->haneruEye();
       }
     }
@@ -336,15 +337,21 @@ public:
       ctx.kakeras[paintIndex - 2 * n]->kagayaku(g);
     }
 
-    //for (int i = 0; i < ctx.inochis.size(); ) {
-    //  if (ctx.inochis[i]->ikiteru) i++;
-    //  else inochis.splice(i, 1);
-    //}
-    //
-    //for (var i = 0; i < kakeras.length; ) {
-    //  if (kakeras[i].r > 0.0) i++;
-    //  else kakeras.splice(i, 1);
-    //}
+    for (int i = 0; i < (int)ctx.inochis.size(); ) {
+      if (ctx.inochis[i]->ikiteru) i++;
+      else {
+        delete ctx.inochis[i];
+        ctx.inochis.erase(ctx.inochis.begin() + i);
+      }
+    }
+    
+    for (int i = 0; i < (int)ctx.kakeras.size(); ) {
+      if (ctx.kakeras[i]->r > 0.0) i++;
+      else {
+        delete ctx.kakeras[i];
+        ctx.kakeras.erase(ctx.kakeras.begin() + i);
+      }
+    }
     
     paintIndex += 1;
   }
