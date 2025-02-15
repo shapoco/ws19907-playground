@@ -6,8 +6,6 @@
 
 namespace shapoco::inochi {
 
-using namespace lgfx;
-
 using real = float;
 
 static constexpr int NUM_INITIAL_BALLS = 15;
