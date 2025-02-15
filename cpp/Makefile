@@ -9,8 +9,9 @@ SRC_DIR = src
 BUILD_DIR = build
 BIN_DIR = bin/$(BOARD)
 
-BOARD := pico
+#BOARD := pico
 #BOARD := pico2
+BOARD := pico_w
 
 WIFI_SSID := ""
 WIFI_PASS := ""

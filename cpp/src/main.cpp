@@ -1,52 +1,65 @@
 #include <stdio.h>
 
 #include "hardware/clocks.h"
-#include "lgfx_ili9488.hpp"
+#include "hardware/dma.h"
 #include "pico/stdlib.h"
 
-namespace shapoco::shapopad {
-LGFX_ILI9488 lcd(320, 480, 1);
+#include "lgfx_ili9488.hpp"
+#include "lcd_service.hpp"
+#include "inochi_no_kagayaki.hpp"
 
-int main() {
+namespace shapoco::shapopad {
+
+using namespace lgfx;
+
+uint64_t nextUpdateTimeUs = 0;
+
+LcdService screen(480, 320, 3);
+InochiNoKagayaki world;
+
+void setup(void) {
+  set_sys_clock_khz(250000, true);
+  sleep_ms(100);
+
   stdio_init_all();
   sleep_ms(500);
 
-  // gpio_init(PICO_DEFAULT_LED_PIN);
-  // gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+  uint64_t nowMs = time_us_64() / 1000;
+  screen.init(nowMs);
+  world.init(nowMs);
+
+#ifdef BOARD_PICO_W
+#else
+  gpio_init(PICO_DEFAULT_LED_PIN);
+  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+#endif
 
   gpio_init(13);
   gpio_set_dir(13, GPIO_OUT);
   gpio_put(13, true);
+}
 
-  lcd.init();
-  lcd.setRotation(1);
-  // lcd.setPivot(lcd.width() >> 1, lcd.height() >> 1);
+void loop(void) {
+  uint64_t nowUs = time_us_64();
+  uint64_t nowMs = nowUs / 1000;
 
-  while (true) {
-    // gpio_put(PICO_DEFAULT_LED_PIN, true);
-
-    // gpio_put(13, true);
-    // lcd.fillScreen(TFT_BLACK);
-    lcd.clear(TFT_BLACK);
-    sleep_ms(500);
-    // lcd.fillScreen(TFT_WHITE);
-    lcd.clear(TFT_WHITE);
-    sleep_ms(500);
-
-    // gpio_put(PICO_DEFAULT_LED_PIN, false);
-
-    // gpio_put(13, false);
-    // lcd.fillScreen(TFT_RED);
-    lcd.clear(TFT_RED);
-    sleep_ms(500);
-    // lcd.fillScreen(TFT_GREEN);
-    lcd.clear(TFT_GREEN);
-    sleep_ms(500);
-    // lcd.fillScreen(TFT_BLUE);
-    lcd.clear(TFT_BLUE);
-    sleep_ms(500);
+  if (nowUs >= nextUpdateTimeUs && world.idle()) {
+    nextUpdateTimeUs += 1000 * 1000 / 60;
+    nextUpdateTimeUs = nowUs > nextUpdateTimeUs ? nowUs : nextUpdateTimeUs;
+    screen.paintFps(nowMs);
+    screen.flip();
+    world.update(nowMs);
   }
-  return 0;
+  screen.serviceStart(nowMs);
+  world.servicePaint(nowMs, screen.getBackBuffer());
+  screen.serviceEnd(nowMs);
+} 
+
+int main(void) {
+  setup();
+  while (true) {
+    loop();
+  }
 }
 }  // namespace shapoco::shapopad
 
