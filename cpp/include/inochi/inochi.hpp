@@ -4,8 +4,6 @@
 #include <math.h>
 #include <vector>
 
-#include "lgfx_ili9488.hpp"
-
 namespace shapoco::inochi {
 
 using namespace lgfx;
