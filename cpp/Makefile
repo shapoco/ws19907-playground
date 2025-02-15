@@ -54,7 +54,9 @@ APP_NAMESPACE = shapoco::$(APP_NAME)
 
 DEPENDENCY_LIST=\
 	$(wildcard $(INC_DIR)/*.*) \
-	$(wildcard $(SRC_DIR)/*.*)
+	$(wildcard $(INC_DIR)/**/*.*) \
+	$(wildcard $(SRC_DIR)/*.*) \
+	$(wildcard $(SRC_DIR)/**/*.*)
 
 all: $(BIN)
 #fonts: $(FONT_HPP_LIST)

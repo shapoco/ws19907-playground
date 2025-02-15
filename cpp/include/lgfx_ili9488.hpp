@@ -3,8 +3,7 @@
 #include <stdint.h>
 #include <hardware/pwm.h>
 
-#define TOUCH_ENABLED (0)
-#define LGFX_USE_V1
+#define TOUCH_ENABLED (1)
 
 #include <LovyanGFX.hpp>
 

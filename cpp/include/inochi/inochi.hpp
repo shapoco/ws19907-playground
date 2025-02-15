@@ -35,7 +35,8 @@ struct VecR {
   VecR& operator+=(const VecR &v) { x += v.x; y += v.y; return *this; }
   VecR& operator-=(const VecR &v) { x -= v.x; y -= v.y; return *this; }
   VecR& operator*=(real s) { x *= s; y *= s; return *this; }
-  real abs() const { return sqrt(x * x + y * y); }
+  real absPow2() const { return  x * x + y * y; }
+  real abs() const { return sqrt(absPow2()); }
   VecI roundToInt() const { return VecI{(int)round(x), (int)round(y)}; }
 };
 
@@ -85,7 +86,7 @@ public:
   real deltaMs;
   VecI screenSize;
   
-  std::vector<Ball*> ball;
+  std::vector<Ball*> balls;
   std::vector<InochiNoKakera*> fragments;
   VecR touchDownPos;
   VecR touchMovePos;
@@ -131,7 +132,7 @@ public:
     r = 1.0;
   }
 
-  void odoru(Context &ctx) {
+  void move(Context &ctx) {
     real aCoeff = pow(0.0018, ctx.deltaMs);
     real vCoeff = 60 * ctx.deltaMs;
     vec *= aCoeff;
@@ -179,7 +180,7 @@ public:
     Nearest nearest[2];
     int nearCount = 0;
 
-    for (Ball *ball : ctx.ball) {
+    for (Ball *ball : ctx.balls) {
       if (ball->id == id) continue;
       if (!ball->alive) continue;
 
@@ -207,9 +208,9 @@ public:
       Nearest &near = nearest[i];
       real d = nearest[i].dist;
       if (d < 0.3) {
-        die(ctx);
+        kill(ctx);
         if (near.ball->id != ctx.dragTargetBallId) {
-          near.ball->die(ctx);
+          near.ball->kill(ctx);
         }
         continue;
       }
@@ -301,7 +302,7 @@ public:
     ctx.fillCircle(pos, bodySize * 0.2, Palette::BLUE);
   }
   
-  void die(Context &ctx) {
+  void kill(Context &ctx) {
     alive = false;
     for (int i = 0; i < 8; i++) {
       ctx.fragments.push_back(new InochiNoKakera(bodyPos));
@@ -320,7 +321,7 @@ public:
 
     for (int i = 0; i < NUM_INITIAL_BALLS; i++) {
       real a = 2 * M_PI * i / NUM_INITIAL_BALLS;
-      ctx.ball.push_back(new Ball(ctx, VecR(CIRCLE_RADIUS * cos(a), CIRCLE_RADIUS * sin(a))));
+      ctx.balls.push_back(new Ball(ctx, VecR(CIRCLE_RADIUS * cos(a), CIRCLE_RADIUS * sin(a))));
     }
   }
 
@@ -330,44 +331,61 @@ public:
     ctx.deltaMs = (real)(ctx.nowMs - lastMs) / 1000;
     
     bool lastTouched = ctx.touching;
+    VecR lastMovePos = ctx.touchMovePos;
     TouchState touch;
     ctx.intf.getTouchState(&touch);
     ctx.touchMovePos = ctx.screenToWorld(touch.pos);
+    ctx.touchMoveVel = ctx.touchMovePos - lastMovePos;
     ctx.touching = touch.touched;
     if (ctx.touching && !lastTouched) {
       ctx.touchDownPos = ctx.touchMovePos;
+      ctx.dragTargetBallId = findByWorldPos(ctx.touchDownPos);
+    }
+    else if (!ctx.touching && lastTouched) {
+      VecR d = ctx.touchMovePos - ctx.touchDownPos;
+      real dManhattan = abs(d.x) + abs(d.y);
+      if (dManhattan < VIEW_RADIUS / 10) {
+        if (ctx.dragTargetBallId >= 0) {
+          Ball *ball = findById(ctx.dragTargetBallId);
+          if (ball) ball->kill(ctx);
+        }
+        else {
+          ctx.balls.push_back(new Ball(ctx, ctx.touchMovePos));
+        }
+      }
+      ctx.dragTargetBallId = -1;
     }
 
-    //if (ctx.inochis.size() < NUM_INITIAL_INOCHIS) {
-    //  if (randFloat() < 0.01) {
-    //    real a = 2 * M_PI * randFloat();
-    //    ctx.inochis.push_back(new Inochi(ctx, Vec2d(2 * VIEW_RADIUS * cos(a), 2 * VIEW_RADIUS * sin(a))));
-    //  }
-    //}
+    if (ctx.balls.size() < NUM_INITIAL_BALLS) {
+      if (randFloat() < 0.01) {
+        real a = 2 * M_PI * randFloat();
+        ctx.balls.push_back(new Ball(ctx, VecR(2 * VIEW_RADIUS * cos(a), 2 * VIEW_RADIUS * sin(a))));
+      }
+    }
       
-    int numInochis = ctx.ball.size();
+    int numInochis = ctx.balls.size();
     if (numInochis > 0) {
       int numOpenEye = 0;
-      for(auto ball : ctx.ball) {
+      for(auto ball : ctx.balls) {
         if (ball->eyeOpened) numOpenEye++;
       }
       if (randFloat() < 0.005 * numInochis) {
-        int i = floor(randFloat() * (int)ctx.ball.size());
-        ctx.ball[i]->bounce(numOpenEye < 0.3 * numInochis ? 0.8 : 0.2);
+        int i = floor(randFloat() * (int)ctx.balls.size());
+        ctx.balls[i]->bounce(numOpenEye < 0.3 * numInochis ? 0.8 : 0.2);
       }
       if (randFloat() < 0.01 * numInochis) {
         int i = floor(randFloat() * numInochis);
-        ctx.ball[i]->startSaccade();
+        ctx.balls[i]->startSaccade();
       }
     }
     
-    for(auto ball : ctx.ball) {
+    for(auto ball : ctx.balls) {
       ball->interact(ctx);
       ball->move(ctx);
     }
     
     for(auto kakera : ctx.fragments) {
-      kakera->odoru(ctx);
+      kakera->move(ctx);
     }
     
     paintIndex = 0;
@@ -380,23 +398,23 @@ public:
       ctx.intf.clearScreen();
     }
 
-    int n = ctx.ball.size();
+    int n = ctx.balls.size();
 
     if (paintIndex < n) {
-      ctx.ball[paintIndex]->paintBody(ctx);
+      ctx.balls[paintIndex]->paintBody(ctx);
     }
     else if (paintIndex < 2 * n) {
-      ctx.ball[paintIndex - n]->paintEye(ctx);
+      ctx.balls[paintIndex - n]->paintEye(ctx);
     }
     else {
       ctx.fragments[paintIndex - 2 * n]->kagayaku(ctx);
     }
 
-    for (int i = 0; i < (int)ctx.ball.size(); ) {
-      if (ctx.ball[i]->alive) i++;
+    for (int i = 0; i < (int)ctx.balls.size(); ) {
+      if (ctx.balls[i]->alive) i++;
       else {
-        delete ctx.ball[i];
-        ctx.ball.erase(ctx.ball.begin() + i);
+        delete ctx.balls[i];
+        ctx.balls.erase(ctx.balls.begin() + i);
       }
     }
     
@@ -411,8 +429,25 @@ public:
     paintIndex += 1;
   }
 
+  int findByWorldPos(VecR pos) {
+    for (Ball *ball : ctx.balls) {
+      real dd = (ball->bodyPos - pos).absPow2();
+      if (dd < ball->bodySize * ball->bodySize) {
+        return ball->id;
+      }
+    }
+    return -1;
+  }
+  
+  Ball *findById(int id) {
+    for (Ball *ball : ctx.balls) {
+      if (ball->id == id) return ball;
+    }
+    return nullptr;
+  }
+  
   bool idle() {
-    int n = (int)(ctx.ball.size()) * 2 + (int)(ctx.fragments.size());
+    int n = (int)(ctx.balls.size()) * 2 + (int)(ctx.fragments.size());
     return paintIndex >= n;
   }
 
